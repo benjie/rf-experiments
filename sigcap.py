@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt # easy_install matplotlib
 import numpy as np
 import simplejson
 
-if len(sys.argv >= 2):
+if len(sys.argv) >= 2:
   readFromFile = sys.argv[1]
   f = open(readFromFile, 'r')
   analog_reads = simplejson.load(f)
