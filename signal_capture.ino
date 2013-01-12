@@ -15,7 +15,8 @@ void setup() {
     ring_buffer[i] = 0;
   }
   //memset(ring_buffer, 0, sizeof(ring_buffer));
-  Serial.begin(76800);
+  //Serial.begin(76800);
+  Serial.begin(57600);
   pinMode(DIGITAL_INPUT_PIN, INPUT);
   last = micros();
 }
@@ -27,6 +28,8 @@ void loop() {
       started = true;
       remaining = 5000;
       attachInterrupt(0, pinChange, CHANGE);
+      Serial.write(0xFF);
+      Serial.write(0xFF);
     }
   }
   if (writepos != pos) {

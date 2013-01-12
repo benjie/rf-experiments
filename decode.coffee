@@ -26,7 +26,7 @@ endData = (index) ->
   #bits.shift 1
   bits.unshift "0"
   binStr = bits.join ""
-  if binStr.length < 4
+  if binStr.length < 8
     return
   if outputted.indexOf(binStr) is -1
     outputted.push binStr
