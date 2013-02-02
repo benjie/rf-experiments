@@ -1,8 +1,8 @@
 fs = require 'fs'
 
 TRANSMISSION_GAP = 10250
-DURATION_ONE = 1250
-DURATION_ZERO = 250
+DURATION_TEN = 1250
+DURATION_ONE = 250
 DURATION_HIGH = 250
 
 ERROR_MARGIN = 150
@@ -24,14 +24,13 @@ startIndex = null
 endData = (index) ->
   sensibleData = false
   #bits.shift 1
-  bits.unshift "0"
   binStr = bits.join ""
   if binStr.length < 8
     return
   if outputted.indexOf(binStr) is -1
     outputted.push binStr
     #console.log "#{startIndex} -> #{index} : "
-    console.log binStr.replace /(....)/g, "$1 "
+    console.log binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
 
 startData = (index) ->
   startIndex = index
@@ -50,8 +49,8 @@ for l, index in array
     if !isHigh
       if withinErrorMargin(l, DURATION_ONE)
         bits.push "1"
-      else if withinErrorMargin(l, DURATION_ZERO)
-        bits.push "0"
+      else if withinErrorMargin(l, DURATION_TEN)
+        bits.push "10"
       else
         #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_ZERO}"
         endData(index)
