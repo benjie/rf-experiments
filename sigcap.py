@@ -16,8 +16,8 @@ else:
   f = open('dump.json', 'w')
 
   ser = serial.Serial(
-    port = '/dev/tty.usbserial-A6008jEU',
-    baudrate = 76800,
+    port = '/dev/tty.usbserial-A6008jYH',
+    baudrate = 57600,
   )
 
   time.sleep(1.5)
@@ -29,12 +29,16 @@ else:
   ser.write('2')
 
   r = 0
-  analog_reads = [];
+  analog_reads = []
+  started = False
   while 1:
     b1 = ord(ser.read(1))
     b2 = ord(ser.read(1))
     if b1 is 0xFF and b2 is 0xFF:
-      break
+      if not started:
+        started = True
+      else:
+        break
     r = (b1 << 8) | b2
     analog_reads.append(r)
     print ".",
