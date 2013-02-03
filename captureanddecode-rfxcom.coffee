@@ -26,7 +26,7 @@ analyse = (array) ->
     sensibleData = false
     #bits.shift 1
     binStr = bits.join ""
-    if binStr.length < 8
+    if binStr.length < 15
       return null
     if outputted.indexOf(binStr) is -1
       outputted.push binStr
@@ -84,6 +84,14 @@ else
     ser = new SerialPort '/dev/tty.usbserial-A6008jYH',
       baudrate: 57600 #76800
 
+    ser.on 'close', ->
+      console.error "ERROR: Port closed itself!"
+      ser.close()
+      rfxtrx.serialport.close()
+      delay 1000, ->
+        process.exit 1
+      return
+
     ser.on 'open', ->
       console.error "Port open, capturing..."
 
@@ -110,7 +118,16 @@ else
         b2 = null
         analogReads = null
         commandToSend = null
+        startNextAnywayTimer = null
+        filename = null
         next = ->
+          if startNextAnywayTimer
+            clearTimeout startNextAnywayTimer
+          startNextAnywayTimer = delay 5000, ->
+            console.error "ERROR: No data?"
+            commandsToSend.unshift commandToSend
+            next()
+            return
           if commandsToSend.length is 0
             console.error "ALL DONE!"
             ser.close()
@@ -119,24 +136,31 @@ else
               process.exit 0
             return
           commandToSend = commandsToSend.shift()
-          ser.write '2'
-          delay 0, ->
-            remote = commandToSend.remote
-            unitCode = commandToSend.unitCode ? "1"
-            remote = "#{remote}/#{unitCode}"
-            options = {
-              command: lightwaverf.ON
-            }
-            for k in ['command', 'level']
-              if commandToSend[k]
-                options[k] = commandToSend[k]
-            console.log "Performing #{remote} / #{commandToSend.id}"
-            lightwaverf.switchOn remote, options
-          r = 0
-          okay = 0
-          b1 = null
-          b2 = null
-          analogReads = []
+          filename = __dirname+"/RFX/#{commandToSend.remote}_#{commandToSend.id}"
+          fs.exists filename, (exists) ->
+            if exists
+              console.error "Skipping #{commandToSend.remote}_#{commandToSend.id} since it exists."
+              next()
+              return
+
+            ser.write '2'
+            delay 0, ->
+              remote = commandToSend.remote
+              unitCode = commandToSend.unitCode ? "1"
+              remote = "#{remote}/#{unitCode}"
+              options = {
+                command: lightwaverf.ON
+              }
+              for k in ['command', 'level']
+                if commandToSend[k]
+                  options[k] = commandToSend[k]
+              console.log "Performing #{remote} / #{commandToSend.id}"
+              lightwaverf.switchOn remote, options
+            r = 0
+            okay = 0
+            b1 = null
+            b2 = null
+            analogReads = []
 
         ser.on 'data', (data) ->
           for i in [0...data.length]
@@ -155,7 +179,8 @@ else
             if b1 is 0xFF and b2 is 0xFF
               console.error "Analysing"
               commands = analyse analogReads
-              fs.writeFileSync __dirname+"/RFX/#{commandToSend.remote}_#{commandToSend.id}", commands.join("\n")
+              if commands.length > 0
+                fs.writeFileSync filename, commands.join("\n")
               delay 500, ->
                 next()
             r = (b1 << 8) | b2
