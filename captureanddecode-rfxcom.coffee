@@ -104,7 +104,7 @@ else
         remote = "0xF30537"
         for unitCode in [1..16]
           commandsToSend.push {remote: remote, id: "ON_#{unitCode}", unitCode: unitCode, command:lightwaverf.ON}
-          commandsToSend.push {remote: remote, id: "OFF_#{unitCode}", unitCode: unitCode, command:lightwaverf.ON}
+          commandsToSend.push {remote: remote, id: "OFF_#{unitCode}", unitCode: unitCode, command:lightwaverf.OFF}
         for mood in [1..3]
           strMood = "MOOD#{mood}"
           commandsToSend.push {remote: remote, id: strMood, command:lightwaverf[strMood]}
