@@ -33,7 +33,6 @@ analyse = (array) ->
       #console.log "#{startIndex} -> #{index} : "
       pretty = binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
       console.log pretty
-      console.error pretty
       return pretty
     return null
 
@@ -105,6 +104,12 @@ else
           commandsToSend.push {remote: remote, id: "LEVEL_#{level}", command:lightwaverf.SET_LEVEL, level: level}
 
 
+        r = null
+        okay = null
+        b1 = null
+        b2 = null
+        analogReads = null
+        commandToSend = null
         next = ->
           if commandsToSend.length is 0
             console.error "ALL DONE!"
@@ -133,28 +138,28 @@ else
           b2 = null
           analogReads = []
 
-          ser.on 'data', (data) ->
-            for i in [0...data.length]
-              val = data.readUInt8 i
-              if okay < 2
-                if val isnt 0xFF
-                  okay = 0
-                else
-                  okay++
-                continue
-              if b1 is null
-                b1 = val
-                continue
+        ser.on 'data', (data) ->
+          for i in [0...data.length]
+            val = data.readUInt8 i
+            if okay < 2
+              if val isnt 0xFF
+                okay = 0
               else
-                b2 = val
-              if b1 is 0xFF and b2 is 0xFF
-                console.error "Analysing"
-                commands = analyse analogReads
-                fs.writeFileSync __dirname+"/RFX/#{commandToSend.remote}_#{commandToSend.id}", commands.join("\n")
-                delay 500, ->
-                  next()
-              r = (b1 << 8) | b2
-              analogReads.push(r)
-              b1 = b2 = null
-            return
+                okay++
+              continue
+            if b1 is null
+              b1 = val
+              continue
+            else
+              b2 = val
+            if b1 is 0xFF and b2 is 0xFF
+              console.error "Analysing"
+              commands = analyse analogReads
+              fs.writeFileSync __dirname+"/RFX/#{commandToSend.remote}_#{commandToSend.id}", commands.join("\n")
+              delay 500, ->
+                next()
+            r = (b1 << 8) | b2
+            analogReads.push(r)
+            b1 = b2 = null
+          return
         next()
