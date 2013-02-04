@@ -152,7 +152,7 @@ else
                 command: lightwaverf.ON
               }
               for k in ['command', 'level']
-                if commandToSend[k]
+                if commandToSend[k]?
                   options[k] = commandToSend[k]
               console.log "Performing #{remote} / #{commandToSend.id}"
               lightwaverf.switchOn remote, options

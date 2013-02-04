@@ -14,6 +14,7 @@ withinErrorMargin = (val, expected) ->
 filename = process.argv[2]
 filename ?= 'dump.json'
 array = JSON.parse fs.readFileSync filename, 'utf8'
+array.push 0 # Definitely terminate the data
 
 sensibleData = false
 isHigh = false
@@ -52,7 +53,7 @@ for l, index in array
       else if withinErrorMargin(l, DURATION_TEN)
         bits.push "10"
       else
-        #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_ZERO}"
+        #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_TEN}"
         endData(index)
     isHigh = !isHigh
   if !sensibleData
