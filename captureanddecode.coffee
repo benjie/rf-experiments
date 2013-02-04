@@ -31,6 +31,7 @@ analyse = (array) ->
       outputted.push binStr
       #console.log "#{startIndex} -> #{index} : "
       console.log binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
+      console.error binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
 
   startData = (index) ->
     startIndex = index
@@ -68,12 +69,12 @@ if process.argv[2]?
 else
   # Capture the data
 
-  console.log "Opening port..."
+  console.error "Opening port..."
   ser = new SerialPort '/dev/tty.usbserial-A6008jYH',
     baudrate: 57600 #76800
 
   ser.on 'open', ->
-    console.log "Port open, capturing..."
+    console.error "Port open, capturing..."
 
     # Throw away first 1.5s of data
     delay 1500, ->
@@ -100,7 +101,7 @@ else
             b2 = val
           if b1 is 0xFF and b2 is 0xFF
             ser.close()
-            console.log "Analysing"
+            console.error "Analysing"
             analyse analogReads
           r = (b1 << 8) | b2
           analogReads.push(r)
