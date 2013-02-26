@@ -141,40 +141,14 @@ else
 
   ser.on 'close', ->
     console.error "CLOSED!"
+
   ser.on 'data', (data) ->
-    console.log data.toString('utf8')
+    console.log data#.toString('utf8')
+
   ser.on 'open', ->
-
     delay 1500, ->
-      sendLightwaveRF 0xF30537, 12, 1, 0
-    # Throw away first 1.5s of data
-    delay 1500000, ->
-      #ser.write '2'
-      r = 0
-      okay = 0
-      b1 = null
-      b2 = null
-      analogReads = []
-
-      ser.on 'data', (data) ->
-        for i in [0...data.length]
-          val = data.readUInt8 i
-          if okay < 2
-            if val isnt 0xFF
-              okay = 0
-            else
-              okay++
-            continue
-          if b1 is null
-            b1 = val
-            continue
-          else
-            b2 = val
-          if b1 is 0xFF and b2 is 0xFF
-            ser.close()
-            console.error "Analysing"
-            analyse analogReads
-          r = (b1 << 8) | b2
-          analogReads.push(r)
-          b1 = b2 = null
-        return
+      toSend = new Buffer(2)
+      toSend[0] = 'D'.charCodeAt(0)
+      toSend[1] = divisor
+      ser.write toSend
+      sendLightwaveRF 0xF30537, 13, 1, 5
