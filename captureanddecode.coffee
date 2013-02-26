@@ -10,18 +10,23 @@ DURATION_HIGH = 250
 
 ERROR_MARGIN = 150
 
+divisor = 40
+analogReads = []
+
 withinErrorMargin = (val, expected) ->
   margin = ERROR_MARGIN + expected/8
   return expected-margin < val < expected+margin
 
-analyse = (array) ->
+analyse = ->
   sensibleData = false
   isHigh = false
   bits = null
   outputted = []
   startIndex = null
+  stopIndex = null
 
   endData = (index) ->
+    stopIndex = index
     sensibleData = false
     #bits.shift 1
     binStr = bits.join ""
@@ -39,7 +44,7 @@ analyse = (array) ->
     isHigh = true
     bits = []
 
-  for l, index in array
+  for l, index in analogReads
     if sensibleData
       if isHigh
         #if !withinErrorMargin(l, DURATION_HIGH)
@@ -53,13 +58,20 @@ analyse = (array) ->
         else if withinErrorMargin(l, DURATION_TEN)
           bits.push "10"
         else
-          #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_ZERO}"
+          #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_TEN}"
           endData(index)
       isHigh = !isHigh
     if !sensibleData
       if withinErrorMargin(l, TRANSMISSION_GAP)
         #console.log "Starting logging data."
         startData(index)
+
+  if startIndex ? 0 > stopIndex ? 0
+    analogReads.splice(0,startIndex)
+  else if stopIndex ? 0 > 0
+    analogReads.splice(0, stopIndex)
+
+  return
 
 if process.argv[2]?
   filename = process.argv[2]
@@ -78,32 +90,18 @@ else
 
     # Throw away first 1.5s of data
     delay 1500, ->
-      ser.write '2'
+      toSend = new Buffer(3)
+      toSend[0] = 'D'.charCodeAt(0)
+      toSend[1] = divisor
+      toSend[2] = 'c'.charCodeAt(0)
+      ser.write toSend
       r = 0
       okay = 0
-      b1 = null
-      b2 = null
-      analogReads = []
 
       ser.on 'data', (data) ->
         for i in [0...data.length]
           val = data.readUInt8 i
-          if okay < 2
-            if val isnt 0xFF
-              okay = 0
-            else
-              okay++
-            continue
-          if b1 is null
-            b1 = val
-            continue
-          else
-            b2 = val
-          if b1 is 0xFF and b2 is 0xFF
-            ser.close()
-            console.error "Analysing"
-            analyse analogReads
-          r = (b1 << 8) | b2
-          analogReads.push(r)
-          b1 = b2 = null
+          val *= divisor
+          analogReads.push(val)
+          analyse()
         return
