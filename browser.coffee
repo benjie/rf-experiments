@@ -4,6 +4,7 @@ This file is to be ran on the browser.
 
 LightwaveRF = require('./lightwaverf.coffee')
 
+sampleData = require('./sample.coffee')
 
 formEl = null
 outputEl = null
@@ -37,9 +38,16 @@ window.addEventListener 'DOMContentLoaded', ->
   formEl = document.getElementById('input')
   outputEl = document.getElementById('output')
   dataEl = document.getElementById('data')
+  sampleEl = document.getElementById('sample')
+  sampleEl.onclick = (e) ->
+    e.preventDefault?()
+    dataEl.value = JSON.stringify(sampleData)
+    onsubmit()
 
-  formEl.onsubmit = (e) ->
-    e.preventDefault()
+    return false
+
+  onsubmit = (e) ->
+    e?.preventDefault?()
 
     data = dataEl.value.replace /[^0-9,]/,""
     data = data.split(",")
@@ -51,3 +59,4 @@ window.addEventListener 'DOMContentLoaded', ->
     output(results)
 
     return false
+  formEl.onsubmit = onsubmit

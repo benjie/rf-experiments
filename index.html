@@ -26,6 +26,8 @@
   <body>
     <h1>LightwaveRF decoder</h1>
 
+    <p><a href="http://github.com/benjie/rf-experiments">GitHub repository for this is here</a>.</p>
+
     <p>Enter your RF data into the textbox below. Your data should comprise a
     comma separated list of durations in microseconds (&mu;s) for which the
     433.92MHz RF band was either high or low according to your <abbr
@@ -37,6 +39,7 @@
     blog posts</a>.</p>
 
     <form id="input" method="POST" action="" onsubmit="return false;">
+      <p><a href="#" id="sample">Click here to load sample data</a></p>
       <textarea id="data"></textarea>
       <input type="submit" value="Analyse">
     </form>
