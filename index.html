@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <title>LightwaveRF decoder by @Benjie</title>
+    <style>
+      textarea {
+        width: 100%;
+        height: 300px;
+      }
+      #output {
+        color: rgb(50, 50, 50);
+      }
+      .entry {
+        margin: 20px;
+      }
+      .data {
+        font-weight: bold;
+        color: black;
+      }
+      .debug {
+        color: rgb(100, 100, 100);
+        font-size: 0.9em;
+      }
+    </style>
+    <script src="browser.js"></script>
+  </head>
+  <body>
+    <h1>LightwaveRF decoder</h1>
+
+    <p>Enter your RF data into the textbox below. Your data should comprise a
+    comma separated list of durations in microseconds (&mu;s) for which the
+    433.92MHz RF band was either high or low according to your <abbr
+    title="on-off keying">OOK</abbr> receiver. A JSON array will work just fine
+    too.</p>
+
+    <p>To read more about LightwaveRF decoding, view <a
+    href="http://www.benjiegillam.com/2013/02/lightwaverf-rf-protocol/">Benjie's
+    blog posts</a>.</p>
+
+    <form id="input" method="POST" action="" onsubmit="return false;">
+      <textarea id="data"></textarea>
+      <input type="submit" value="Analyse">
+    </form>
+    <div id="output">
+    </div>
+  </body>
+</html>
