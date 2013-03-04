@@ -1,5 +1,6 @@
 fs = require 'fs'
 SerialPort = require('serialport').SerialPort
+LightwaveRF = require './lightwaverf.coffee'
 
 delay = (ms, cb) -> setTimeout cb, ms
 
@@ -18,58 +19,24 @@ withinErrorMargin = (val, expected) ->
   return expected-margin < val < expected+margin
 
 analyse = ->
-  sensibleData = false
-  isHigh = false
-  bits = null
-  outputted = []
-  startIndex = null
+  results = LightwaveRF.decode analogReads
   stopIndex = null
+  for result in results when result.valid
+    console.log "DATA: #{result.pretty}"
+    console.log "  meaning: Remote: #{result.remoteId}, subunit: #{result.subunit} (#{result.subunitName}), command: #{result.command} (#{result.commandName}), parameter: #{result.parameter} (#{result.level ? "-"})"
+    console.log ""
+    stopIndex = result.stopIndex
 
-  endData = (index) ->
-    stopIndex = index
-    sensibleData = false
-    #bits.shift 1
-    binStr = bits.join ""
-    if binStr.length < 8
-      return
-    if outputted.indexOf(binStr) is -1
-      outputted.push binStr
-      #console.log "#{startIndex} -> #{index} : "
-      console.log binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
-      console.error binStr.substr(1).replace /1(....)(....)/g, " 1  $1 $2 "
-
-  startData = (index) ->
-    startIndex = index
-    sensibleData = true
-    isHigh = true
-    bits = []
-
-  for l, index in analogReads
-    if sensibleData
-      if isHigh
-        #if !withinErrorMargin(l, DURATION_HIGH)
-        if l > DURATION_HIGH + ERROR_MARGIN
-          isHigh = false
-          #console.log "High duration incorrect: #{l} !~= #{DURATION_HIGH}"
-          #endData()
-      if !isHigh
-        if withinErrorMargin(l, DURATION_ONE)
-          bits.push "1"
-        else if withinErrorMargin(l, DURATION_TEN)
-          bits.push "10"
-        else
-          #console.log "Low duration incorrect: #{l} !~= #{DURATION_ONE} or #{DURATION_TEN}"
-          endData(index)
-      isHigh = !isHigh
-    if !sensibleData
-      if withinErrorMargin(l, TRANSMISSION_GAP)
-        #console.log "Starting logging data."
-        startData(index)
-
-  if startIndex ? 0 > stopIndex ? 0
-    analogReads.splice(0,startIndex)
-  else if stopIndex ? 0 > 0
+  # Clear memory every time we get a LightwaveRF command
+  if stopIndex ? 0 > 0
     analogReads.splice(0, stopIndex)
+
+  # Clear periodically anyway
+  checkFrequency = 500
+  amountToKeep = 2000
+  if analogReads.length % checkFrequency is 0
+    if analogReads.length > amountToKeep
+      analogReads = analogReads.slice(-amountToKeep)
 
   return
 
