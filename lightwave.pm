@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# © 2013 Anton Piatek - http://anton.mit-license.org
 package lightwave;
 
 use Modern::Perl;    # strict, warnings, v5.10 features
