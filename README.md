@@ -39,5 +39,11 @@ decoder:
 
 More to come...
 
+License
+-------
+
+Released under the [MIT license][].
+
 [devices]: http://www.ebay.co.uk/itm/RF-Wireless-Transmitter-and-Receiver-Link-Kit-Module-433Mhz-For-Remote-Control-/350628314207?pt=UK_Gadgets&hash=item51a3137c5f
 [onlinedecoder]: http://benjie.github.com/rf-experiments/
+[MIT license]: http://benjie.mit-license.org/
