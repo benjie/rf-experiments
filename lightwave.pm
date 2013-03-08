@@ -96,11 +96,11 @@ sub set_level
 
 sub sendserial{
   my ($device, $data) = @_;
+  usleep(50);
   print $TRACE $data;
   $hex_buffer_sent .= unpack("H*", $data)." ";
   my $count_out = $device->write($data);
   #say "$count_out ".unpack("H*",$data);
-  usleep(1);
   die "write failed\n"     unless ($count_out);
   die "write incomplete\n" if ( $count_out != length($data) );
 }
@@ -290,7 +290,8 @@ sub unpack_data {
     #Notes: Level 00 used for on/off
     # 		level 40 sometimes sent as a repeat for off
     #		Level C0 used on button D4 for "all off"
-    #		level 82 used on button D4 with cmd MOOD for mood
+    #		level 82 used on button D4 with cmd MOOD for mood (mood 2?)
+    #		level 02 used on button D4 with cmd MOOD to set current levels as mood (mood 2?)
     #		level BF used to increase brightness
     #		level A0 used to decrease brightness
     my $level   = $hex_bytes[0] . $hex_bytes[1];
