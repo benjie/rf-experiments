@@ -25,7 +25,6 @@ has 'debug' => (
 #divisor to send to the arduino
 # Try 'a=97' or '(=40'
 my $divisor = 40;
-my $verbose = 0;
 
 # Some timing values from lawrie / ligthwaveRF
 # No idea how accurate they are
@@ -95,8 +94,9 @@ sub open_serial
     $device->stopbits(1);
 
     #flush serial buffer
+    say "clearing serial buffer...";
     while ( $device->read(1) ) { }
-    sleep(2);
+    usleep(2_000_000);
   }
 
   return $device;
@@ -133,8 +133,8 @@ sub send_command_serial {
   #Initialise the arduino to send
   $self->sendserial("D" . chr($divisor) . "s" );
 
-  my $bits = command_to_nibbles(@cmd);
-  my @timings = nibbles_to_time_array($bits);
+  my $bits = $self->command_to_nibbles(@cmd);
+  my @timings = $self->nibbles_to_time_array($bits);
 
   #send length (as chr?)
   $self->sendserial(chr(scalar @timings));
@@ -143,7 +143,7 @@ sub send_command_serial {
   $self->sendserial(chr(4));
 
   #send data timings (as chr?)
-  say scalar(@timings) if $verbose;
+  say scalar(@timings) if $self->debug;
   my $count=0;
   my @bytes=();
   foreach my $t (@timings){
@@ -152,7 +152,7 @@ sub send_command_serial {
     $int = 0 if $int > 255;
     $self->sendserial(chr($int));
   }
-  say "buffer sent: $hex_buffer_sent" if $verbose;
+  say "buffer sent: $hex_buffer_sent" if $self->debug;
 
   $hex_buffer_sent = "";
   usleep 500_000;
@@ -169,22 +169,22 @@ print unpack("H*", $data);
 }
 
 sub nibbles_to_time_array {
-  my ($nibbles) = @_;
+  my ($self, $nibbles) = @_;
   $nibbles =~ s/\s+//g;
 
   my @timings = ();
   $nibbles .= "1";
-  say "nibbles: ".length $nibbles if $verbose;
+  say "nibbles: ".length $nibbles if $self->debug;
   $nibbles =~ s/10/0/g;
-  say "nibbles: ".length $nibbles if $verbose;
+  say "nibbles: ".length $nibbles if $self->debug;
   push @timings, $TRANSMISSION_GAP;
   foreach my $c (split(//,$nibbles)){
     push @timings, $DURATION_HIGH;
     push @timings, $DURATION_ONE if $c eq "1";;
     push @timings, $DURATION_TEN if $c eq "0";;
   }
-  say "timings: ".(scalar @timings) if $verbose;
-  say join(",",@timings) if $verbose;
+  say "timings: ".(scalar @timings) if $self->debug;
+  say join(",",@timings) if $self->debug;
   return @timings;
 }
 
@@ -223,16 +223,16 @@ sub read_serial {
                 }
             }
             if ( !$isHigh ) {
-                if ( inErrMargin( $r, $DURATION_ONE ) ) {
+                if ( $self->inErrMargin( $r, $DURATION_ONE ) ) {
                     $bits .= "1";
                 }
-                elsif ( inErrMargin( $r, $DURATION_TEN ) ) {
+                elsif ( $self->inErrMargin( $r, $DURATION_TEN ) ) {
                     $bits .= "10";
                 }
                 else {
                     #reset data
                     $sensible_data = 0;
-                    print_data($bits);
+                    $self->print_data($bits);
                     $bits = "";
                     print $DUMP $read_bytes;
                     $read_bytes = "";
@@ -241,7 +241,7 @@ sub read_serial {
             $isHigh = !$isHigh;
         }
         if ( !$sensible_data ) {
-            if ( inErrMargin( $r, $TRANSMISSION_GAP ) ) {
+            if ( $self->inErrMargin( $r, $TRANSMISSION_GAP ) ) {
                 #reset data
                 $sensible_data = 1;
                 $isHigh        = 1;
@@ -254,20 +254,22 @@ sub read_serial {
 
 sub command_to_nibbles
 {
-  my ( $remoteid, $subunit, $command, $level ) = @_;
-  return hexarray_to_formatted_nibbles( split(//, join('',$level, LWRF_subunit_to_hex($subunit), LWRF_cmd_to_hex($command), $remoteid) ) );
+  my ( $self, $remoteid, $subunit, $command, $level ) = @_;
+  return $self->hexarray_to_formatted_nibbles( 
+      split(//, join('',$level, $self->LWRF_subunit_to_hex($subunit), $self->LWRF_cmd_to_hex($command), $remoteid) ) 
+    );
 }
 
 sub nibbles_to_hexarray
 {
-    my ($data) = @_;
+    my ($self, $data) = @_;
 
     #Each packet should have 91 bits
     return unless length($data) == 91;
 
     my $formatted_data = substr $data, 1;
     $formatted_data =~ s/1(.{4})(.{4})/1 $1 $2 /g;
-    print "1 $formatted_data\n" if $verbose;
+    print "1 $formatted_data\n" if $self->debug;
 
     my @nibbles = $formatted_data =~ m/1 \s ([01]{4} \s [01]{4} )/gx;
     my @hex_bytes = ();
@@ -279,7 +281,7 @@ sub nibbles_to_hexarray
 
 sub hexarray_to_formatted_nibbles
 {
-  my @data = @_;
+  my ($self, @data) = @_;
   return unless @data == 10; 
   
   #start with a 1
@@ -294,13 +296,13 @@ sub hexarray_to_formatted_nibbles
 }
 
 sub unpack_data {
-    my ($data) = @_;
+    my ($self, $data) = @_;
 
     #Each packet should have 91 bits
     return unless length($data) == 91;
 
-    my @hex_bytes = nibbles_to_hexarray($data);
-    say "0x",@hex_bytes if $verbose;
+    my @hex_bytes = $self->nibbles_to_hexarray($data);
+    say "0x",@hex_bytes if $self->debug;
 
     #Notes: Level 00 used for on/off
     # 		level 40 sometimes sent as a repeat for off
@@ -310,8 +312,8 @@ sub unpack_data {
     #		level BF used to increase brightness
     #		level A0 used to decrease brightness
     my $level   = $hex_bytes[0] . $hex_bytes[1];
-    my $subunit = LWRF_hex_to_subunit( $hex_bytes[2] );
-    my $command = LWRF_hex_to_cmd( $hex_bytes[3] );
+    my $subunit = $self->LWRF_hex_to_subunit( $hex_bytes[2] );
+    my $command = $self->LWRF_hex_to_cmd( $hex_bytes[3] );
     my $remoteid =
         $hex_bytes[4]
       . $hex_bytes[5]
@@ -324,7 +326,7 @@ sub unpack_data {
 }
 
 sub print_data {
-    my ($data) = @_;
+    my ($self, $data) = @_;
     return unless $data;
     return unless length($data) > 8;
 
@@ -343,37 +345,37 @@ sub print_data {
     #		$formatted_string .= " " unless ($count % 4);
     #		$count++;
     #	}
-    #	print "$formatted_string\n" if $verbose;
+    #	print "$formatted_string\n" if $self->debug;
     print unpack( 'H*', pack( 'B*', $data ) ) . "\t " . length($data) . "\n"
-      if $verbose;
+      if $self->debug;
 
-    my ( $remoteid, $subunit, $command, $level ) = unpack_data($data);
+    my ( $remoteid, $subunit, $command, $level ) = $self->unpack_data($data);
 
     printf "button: %2s cmd: %4s level: %2s id: %s\n", $subunit, $command,
       $level, $remoteid;
 }
 
 sub inErrMargin {
-    my ( $test, $expected ) = @_;
+    my ( $self, $test, $expected ) = @_;
     my $errMargin = $ERROR_MARGIN + $expected / 8;
     return ( $expected - $errMargin < $test && $test < $expected + $errMargin );
 }
 
 sub LWRF_hex_to_cmd {
-    my ($hex) = @_;
+    my ($self, $hex) = @_;
     return $LWRF_hex_to_cmd{$hex} if ( exists $LWRF_hex_to_cmd{$hex} );
     confess "unknown LWRF command '$hex'";
 }
 
 sub LWRF_cmd_to_hex {
-    my ($cmd) = @_;
+    my ($self, $cmd) = @_;
     $cmd = uc $cmd;
     return $LWRF_cmd_to_hex{$cmd} if ( exists $LWRF_cmd_to_hex{$cmd} );
     confess "unknown LWRF command '$cmd'";
 }
 
 sub LWRF_hex_to_subunit {
-    my ($hex)   = @_;
+    my ($self, $hex)   = @_;
     my $dec     = hex($hex);
     my $quot    = ( $dec % 4 ) + 1;
     my $div     = floor( $dec / 4 );
@@ -385,7 +387,7 @@ sub LWRF_hex_to_subunit {
 }
 
 sub LWRF_subunit_to_hex {
-    my ($subunit) = @_;
+    my ($self, $subunit) = @_;
     $subunit = uc $subunit;
     if ( $subunit =~ /([A-D])([1-4])/ ) {
         my $sel = $1;
