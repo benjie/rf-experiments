@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use Modern::Perl;    # strict, warnings, v5.10 features
 
-use lightwave;
+use Lightwave;
 
 use Test::More tests=>50;
 
@@ -66,23 +66,23 @@ foreach my $row (@data){
   my $hex = @$row[1];
   my $parsed = @$row[2];
 
-  is(join('',lightwave::nibbles_to_hexarray($bits)), $hex, "nibbles to hex");
-  is_deeply([lightwave::unpack_data($bits)], $parsed, "unpack data");
-  is( lightwave::hexarray_to_formatted_nibbles(split(//,$hex)), $origbits, "hexarray to formatted nibbles");
-  is(lightwave::command_to_nibbles(@$parsed), $origbits, "command_to_nibbles");
+  is(join('',Lightwave::nibbles_to_hexarray($bits)), $hex, "nibbles to hex");
+  is_deeply([Lightwave::unpack_data($bits)], $parsed, "unpack data");
+  is( Lightwave::hexarray_to_formatted_nibbles(split(//,$hex)), $origbits, "hexarray to formatted nibbles");
+  is(Lightwave::command_to_nibbles(@$parsed), $origbits, "command_to_nibbles");
 }
 
 
 
-is( lightwave::LWRF_hex_to_subunit("0"), "A1", "hex_to_subunit(0)");
-is( lightwave::LWRF_subunit_to_hex("A1"), "0" , "LWRF_subunit_to_hex(A1)");
-is( lightwave::LWRF_hex_to_subunit("F"), "D4", "hex_to_subunit(F)");
-is( lightwave::LWRF_subunit_to_hex("D4"), "F" , "LWRF_subunit_to_hex(D4)");
+is( Lightwave::LWRF_hex_to_subunit("0"), "A1", "hex_to_subunit(0)");
+is( Lightwave::LWRF_subunit_to_hex("A1"), "0" , "LWRF_subunit_to_hex(A1)");
+is( Lightwave::LWRF_hex_to_subunit("F"), "D4", "hex_to_subunit(F)");
+is( Lightwave::LWRF_subunit_to_hex("D4"), "F" , "LWRF_subunit_to_hex(D4)");
 
-is( lightwave::LWRF_cmd_to_hex("OFF"), "0" , "LWRF_cmd_to_hex(OFF)");
-is( lightwave::LWRF_hex_to_cmd("0"), "OFF", "LWRF_hex_to_cmd(0)");
-is( lightwave::LWRF_cmd_to_hex("ON"), "1" , "LWRF_cmd_to_hex(ON)");
-is( lightwave::LWRF_hex_to_cmd("1"), "ON", "LWRF_hex_to_cmd(1)");
-is( lightwave::LWRF_cmd_to_hex("MOOD"), "2" , "LWRF_cmd_to_hex(MOOD)");
-is( lightwave::LWRF_hex_to_cmd("2"), "MOOD", "LWRF_hex_to_cmd(2)");
+is( Lightwave::LWRF_cmd_to_hex("OFF"), "0" , "LWRF_cmd_to_hex(OFF)");
+is( Lightwave::LWRF_hex_to_cmd("0"), "OFF", "LWRF_hex_to_cmd(0)");
+is( Lightwave::LWRF_cmd_to_hex("ON"), "1" , "LWRF_cmd_to_hex(ON)");
+is( Lightwave::LWRF_hex_to_cmd("1"), "ON", "LWRF_hex_to_cmd(1)");
+is( Lightwave::LWRF_cmd_to_hex("MOOD"), "2" , "LWRF_cmd_to_hex(MOOD)");
+is( Lightwave::LWRF_hex_to_cmd("2"), "MOOD", "LWRF_hex_to_cmd(2)");
 

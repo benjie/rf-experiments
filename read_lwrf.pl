@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use Modern::Perl; # strict, warnings, v5.10 features
 
-use lightwave;
+use Lightwave;
 
-lightwave::read_serial("/dev/ttyACM0");
+my $lwrf = Lightwave->new(port=>"/dev/ttyACM0", debug=>1);
+
+$lwrf->read_serial();

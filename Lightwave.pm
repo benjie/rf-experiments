@@ -1,13 +1,26 @@
 #!/usr/bin/perl
 # © 2013 Anton Piatek - http://anton.mit-license.org
-package lightwave;
+package Lightwave;
 
 use Modern::Perl;    # strict, warnings, v5.10 features
+use Moose;
+#use namespace::autoclean;
+
 use Device::SerialPort qw/:PARAM :STAT/;
 use Carp qw/confess croak/;
 use POSIX qw/floor/;
 use IO::Handle;
 use Time::HiRes qw(usleep);
+
+has 'port' => (
+  is  => 'rw',
+  isa => 'Str',
+  required=>1,
+);
+has 'debug' => (
+  is  => 'rw',
+  isa => 'Bool',
+);
 
 #divisor to send to the arduino
 # Try 'a=97' or '(=40'
@@ -66,39 +79,45 @@ open( my $TRACE, ">", "trace.log");
 binmode $TRACE;
 $TRACE->autoflush;
 
+my $device;
+
 sub open_serial
 {
-  my ($portname) = @_;
-  # Set up the serial port
-  # 57600, 81N on the USB ftdi driver
-  my $device = Device::SerialPort->new($portname) || croak "error opening '$portname'\n$!";
-  $device->databits(8);
-  $device->baudrate(57600);
-  $device->parity("none");
-  $device->stopbits(1);
+  my $self = shift;
+  
+  if( ! defined $device ){
+    # Set up the serial port
+    # 57600, 81N on the USB ftdi driver
+    $device = Device::SerialPort->new($self->port()) || croak "error opening '".$self->port()."'\n$!";
+    $device->databits(8);
+    $device->baudrate(57600);
+    $device->parity("none");
+    $device->stopbits(1);
 
     #flush serial buffer
     while ( $device->read(1) ) { }
     sleep(2);
+  }
 
   return $device;
 }
 
 sub set_level
 {
-  my ( $remoteid, $subunit, $level ) = @_;
+  my ( $self, $remoteid, $subunit, $level ) = @_;
   die "level must be between 0 and 31" unless ($level >= 0 && $level <= 31);
 
   $level = sprintf("%X",$level+0x40);
-  send_command_serial("/dev/ttyACM0", $remoteid, $subunit, "ON", $level);
+  $self->send_command_serial($remoteid, $subunit, "ON", $level);
 }
 
 
 sub sendserial{
-  my ($device, $data) = @_;
+  my ($self, $data) = @_;
   usleep(50);
   print $TRACE $data;
   $hex_buffer_sent .= unpack("H*", $data)." ";
+  my $device = $self->open_serial();
   my $count_out = $device->write($data);
   #say "$count_out ".unpack("H*",$data);
   die "write failed\n"     unless ($count_out);
@@ -106,23 +125,22 @@ sub sendserial{
 }
 
 sub send_command_serial {
-  my ($portname, @cmd) = @_;
-  my $device = open_serial($portname);
+  my ($self, @cmd) = @_;
+  my $device = $self->open_serial();
 
   say join ' ', @cmd;
 
   #Initialise the arduino to send
-  sendserial($device, "D" . chr($divisor) . "s" );
-#  sendserial($device, "s" );
+  $self->sendserial("D" . chr($divisor) . "s" );
 
   my $bits = command_to_nibbles(@cmd);
   my @timings = nibbles_to_time_array($bits);
 
   #send length (as chr?)
-  sendserial($device, chr(scalar @timings));
+  $self->sendserial(chr(scalar @timings));
   
   #send repeats (as chr?)
-  sendserial($device, chr(4));
+  $self->sendserial(chr(4));
 
   #send data timings (as chr?)
   say scalar(@timings) if $verbose;
@@ -132,7 +150,7 @@ sub send_command_serial {
   $count++;
     my $int = int($t/$divisor);
     $int = 0 if $int > 255;
-    sendserial($device, chr($int));
+    $self->sendserial(chr($int));
   }
   say "buffer sent: $hex_buffer_sent" if $verbose;
 
@@ -172,15 +190,12 @@ sub nibbles_to_time_array {
 
 
 sub read_serial {
-    my ($portname) = @_;
+    my ($self, $portname) = @_;
 
-    my $device = open_serial($portname);
+    my $device = $self->open_serial();
     my $sensible_data = 0;
     my $isHigh        = 0;
     my $bits          = "";
-
-    die "no device" unless $device;
-
 
     #Initialise the arduino to record
     $device->write( "D" . chr($divisor) . "c" );
@@ -383,5 +398,7 @@ sub LWRF_subunit_to_hex {
         confess "unknown subunit '$subunit'";
     }
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;
