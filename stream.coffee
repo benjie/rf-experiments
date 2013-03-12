@@ -92,7 +92,7 @@ else
   # Capture the data
 
   console.error "Opening port..."
-  ser = new SerialPort '/dev/tty.usbserial-A6008jYH',
+  ser = new SerialPort '/dev/ttyACM0',
     baudrate: 57600 #76800
 
   ser.on 'open', ->
