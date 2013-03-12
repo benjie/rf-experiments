@@ -21,6 +21,14 @@ has 'debug' => (
   is  => 'rw',
   isa => 'Bool',
 );
+has 'trace_read_file' => (
+  is  => 'rw',
+  isa => 'Str',
+);
+has 'trace_write_file' => (
+  is  => 'rw',
+  isa => 'Str',
+);
 
 #divisor to send to the arduino
 # Try 'a=97' or '(=40'
@@ -74,9 +82,35 @@ my $last_printed_ts = "";
 
 my $hex_buffer_sent = "";
 
-open( my $TRACE, ">", "trace.log");
-binmode $TRACE;
-$TRACE->autoflush;
+
+my $trace_read_FH;
+sub trace_read {
+  my ($self, $data) = @_;
+  
+  if($self->trace_read_file){
+    if(! defined $trace_read_FH){
+      open( $trace_read_FH, ">", $self->trace_read_file);
+      binmode $trace_read_FH;
+      $trace_read_FH->autoflush;
+    }
+    print $trace_read_FH $data;
+  }
+}
+
+my $trace_write_FH;
+sub trace_write {
+  my ($self, $data) = @_;
+
+  if($self->trace_write_file){
+    if(! defined $trace_write_FH){
+      open( $trace_write_FH, ">", $self->trace_write_file);
+      binmode $trace_write_FH;
+      $trace_write_FH->autoflush;
+    }
+    print $trace_write_FH $data;
+  }
+}
+
 
 my $device;
 
@@ -115,7 +149,7 @@ sub set_level
 sub sendserial{
   my ($self, $data) = @_;
   usleep(50);
-  print $TRACE $data;
+  $self->trace_write($data);
   $hex_buffer_sent .= unpack("H*", $data)." ";
   my $device = $self->open_serial();
   my $count_out = $device->write($data);
@@ -204,9 +238,6 @@ sub read_serial {
     say("ready...");
   
     my $read_bytes = "";
-    open( my $DUMP, ">", "/tmp/cmd")||print $!;
-    binmode $DUMP;
-    $DUMP->autoflush;
 
     while (1) {
         my ( $r_count, $b ) = $device->read(1);
@@ -234,7 +265,7 @@ sub read_serial {
                     $sensible_data = 0;
                     $self->print_data($bits);
                     $bits = "";
-                    print $DUMP $read_bytes;
+                    $self->trace_read($read_bytes);
                     $read_bytes = "";
                 }
             }

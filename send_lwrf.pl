@@ -4,6 +4,7 @@ use Modern::Perl; # strict, warnings, v5.10 features
 use Lightwave;
 
 my $lwrf = Lightwave->new(port=>"/dev/ttyACM0", debug=>0);
+#my $lwrf = Lightwave->new(port=>"/dev/ttyACM0", debug=>0, trace_write_file=>"/tmp/lwrf_send_raw");
 
 
 $lwrf->set_level("F0EB8E", "A1", 31);
