@@ -39,6 +39,15 @@ decoder:
 
 More to come...
 
+Perl
+----
+
+There is also a (poorly written right now) perl module, and two example perl scripts
+you can run. They assume your arduino device is /dev/ttyACM0 and you have loaded the 
+signal\_capture.ino sketch into your arduino.
+You will need Modern::Perl and Device::SerialPort installed for your perl.
+(Anton Piatek)
+
 License
 -------
 
